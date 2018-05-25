@@ -1,3 +1,6 @@
+% release(colorDevice);
+% release(depthDevice);
+
 colorDevice = imaq.VideoDevice('kinect',1)
 
 
@@ -29,12 +32,13 @@ for i = 1:500
    x = reshape(ptCloud.Location(:,:,1),[],1)';
    y = reshape(ptCloud.Location(:,:,2),[],1)';
    z = reshape(ptCloud.Location(:,:,3),[],1)';
-   xyz = [x; y; z];
-   k = find(xyz(3,:) == 0); 
-   view(player,ptCloud);
+   k = find(ptCloud.Location(:,:,2) > 0); 
+   xyz = [x(k); y(k); z(k)];
    
+   view(player,ptCloud);
+   scatter3(xyz(1,:), xyz(2,:), xyz(3,:));
 %    scatter3(x,y,z,'.');
-%    pause(1);
+    pause(1);
 %    figure(2);
 %    subplot(1,2,1);
 %    imshow(depthImage);
