@@ -1,0 +1,8 @@
+prefix=/home/yuxin/SLAM/ROS/catkin_ws/install
+
+Name: myslam
+Description: Description of myslam
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/yuxin/SLAM/ROS/catkin_ws/install/lib 
+Requires: 

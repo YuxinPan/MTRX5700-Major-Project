@@ -1,0 +1,2 @@
+myslam
+-DCATKIN_DEVEL_PREFIX=/home/yuxin/SLAM/ROS/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/yuxin/SLAM/ROS/catkin_ws/install -G Unix Makefiles

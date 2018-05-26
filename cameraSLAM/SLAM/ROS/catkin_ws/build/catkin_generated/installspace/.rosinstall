@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/yuxin/SLAM/ROS/catkin_ws/install/setup.sh
