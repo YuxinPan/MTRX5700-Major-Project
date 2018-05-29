@@ -51,7 +51,7 @@ def talker():
     			os.remove(filename)
 		except OSError:
     			pass
-		counter +=1
+		#counter +=1
 		rate.sleep()
 
 if __name__ == '__main__':
