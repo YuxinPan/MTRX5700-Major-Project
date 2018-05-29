@@ -32,12 +32,23 @@ for i = 1:500
    x = reshape(ptCloud.Location(:,:,1),[],1)';
    y = reshape(ptCloud.Location(:,:,2),[],1)';
    z = reshape(ptCloud.Location(:,:,3),[],1)';
-   k = find(ptCloud.Location(:,:,2) > 0); 
-   xyz = [x(k); y(k); z(k)];
+   xyz = [x; y; z];
+   k = find(ptCloud.Location(:,:,2) > -0.30); 
+   xyz = xyz(:,k);
+   k = find(xyz(2,:) < -0.10); 
+   xyz = xyz(:,k);
    
    view(player,ptCloud);
-   scatter3(xyz(1,:), xyz(2,:), xyz(3,:));
-%    scatter3(x,y,z,'.');
+%    figure(1);
+   hold off;
+   grid on;
+   plot(xyz(1,:), xyz(3,:),'.');
+   xlabel('x');
+   ylabel('y');
+%    zlabel('z');
+    axis equal;
+    axis([-5 5 0 9]);
+    
     pause(1);
 %    figure(2);
 %    subplot(1,2,1);
@@ -45,6 +56,6 @@ for i = 1:500
 %    subplot(1,2,2);
 %    imshow(colorImage);
 end
-
+%%
 release(colorDevice);
 release(depthDevice);
