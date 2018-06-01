@@ -3,7 +3,7 @@ close all;
 clc;
 
 resetFlag = 0;
-s = urlread('http://mechatronics.top/demo/io.php?act=reset','Timeout',2);
+s = urlread('http://mechatronics.top/demo/io.php?act=reset','Timeout',2.5);
 
 
 
@@ -52,9 +52,9 @@ R = [0.5^2 0 0;
 
 
 
-IMUserial = serial('COM3')
+IMUserial = serial('COM3','BaudRate',115200)
 fopen(IMUserial)
-
+pause(10)
 fprintf(IMUserial,'r');
 text = fscanf(IMUserial)
 headingOffset = str2num(extractAfter(text,"yaw:"))
@@ -107,12 +107,12 @@ while 1
         x_est(3) + angle];
    
    
-   p2 = plot(x,y,'b.');
+   p2 = plot(x_est(1),x_est(2),'b.');
    set(p1,'Visible','off')
-   p1 = plot(x,y,'rx');
+   p1 = plot(x_est(1),x_est(2),'rx');
    drawnow;
    
-   fprintf('T: %f angle: %f x: %f y: %f\n',ticks * 0.25, angle, x, y);
+   fprintf('angle: %f x: %f y: %f\n', angle, x, y);
    
    
    
@@ -136,10 +136,10 @@ while 1
         inn(3) = inn(3) + 2 * pi;
     end
 
-    inn_store = [inn_store inn];
+    %inn_store = [inn_store inn];
 
     S = H*P*H' + R;
-    S_store = [S_store S];
+    %S_store = [S_store S];
 
     W = P*H'*inv(S);
 
@@ -149,9 +149,9 @@ while 1
     elseif x_est(3) < -pi
         x_est(3) = x_est(3) + 2 * pi;
     end
-    fprintf('Comp t: %d headingEst: %2.1f\n',time, x_est(3));
+    fprintf('xEst: %2.1f yEst: %2.1f headingEst: %2.1f\n', x_est(1),x_est(2),x_est(3));
     P = P - W*S*W';
-    p1 = plot(x_est(1), x_est(2), 'g.');
+    %p1 = plot(x_est(1), x_est(2), 'g.');
 
    
    
@@ -166,9 +166,9 @@ while 1
    
    
    
-   if mod(ticks,3)==0
-       s = urlread(strcat('http://mechatronics.top/demo/io.php?act=add&x=',num2str(x),'&y=',num2str(y),'&reset=',num2str(resetFlag)));
-   end
+   %if mod(ticks,3)==0
+   s = urlread(strcat('http://mechatronics.top/demo/io.php?act=add&x=',num2str(x_est(1)),'&y=',num2str(x_est(2)),'&reset=',num2str(resetFlag)),'Timeout',2.5);
+   %end
 end
 % stop the robot
 SetFwdVelRadiusRoomba(serialObject, 0, inf);
