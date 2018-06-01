@@ -1,100 +1,3 @@
-%% Implement Simultaneous Localization And Mapping (SLAM) with Lidar Scans 
-%% Introduction
-close all;
-clear all;
-clc;
-% This example demonstrates how to implement the Simultaneous Localization
-% And Mapping (SLAM) algorithm on a collected series of lidar scans using
-% pose graph optimization. The goal of this example is to build a map of
-% the environment using the lidar scans and retrieve the trajectory of the
-% robot.
-%
-% To build the map of the environment, the SLAM algorithm incrementally
-% processes the lidar scans and builds a pose graph that links these scans.
-% The robot recognizes a previously-visited place through scan matching and
-% may establish one or more loop closures along its moving path. The SLAM 
-% algorithm utilizes the loop closure information to update the map 
-% and adjust the estimated robot trajectory.
-
-% Copyright 2017 The MathWorks, Inc.
-
-%% Load Laser Scan Data from File
-% Load a down-sampled data set consisting of laser scans collected from a
-% mobile robot in an indoor environment. The average displacement between
-% every two scans is around 0.6 meters.
-
-%%
-%% If we haven't released the devices, then release them
-exist colorDevice;
-if ans
-    release(colorDevice);
-    release(depthDevice);
-end
-
-
-%% Lets connect to the devices
-colorDevice = imaq.VideoDevice('kinect',1)
-depthDevice = imaq.VideoDevice('kinect',2)
-
-colorImage = step(colorDevice);
-depthImage = step(depthDevice);
-
-ptCloud = pcfromkinect(depthDevice,depthImage,colorImage);
-
-% player = pcplayer(ptCloud.XLimits,ptCloud.YLimits,ptCloud.ZLimits,...
-%     'VerticalAxis','y','VerticalAxisDir','down');
-% 
-% xlabel(player.Axes,'X (m)');
-% ylabel(player.Axes,'Y (m)');
-% zlabel(player.Axes,'Z (m)');
-
-% Show 500 images
-    figure(1);
-    hold off;
-    grid on;
-for i = 1:300
-    colorImage = step(colorDevice);
-    depthImage = step(depthDevice);
-    
-    ptCloud = pcfromkinect(depthDevice,depthImage);
-    x = reshape(ptCloud.Location(:,:,1),[],1)';
-    y = reshape(ptCloud.Location(:,:,2),[],1)';
-    z = reshape(ptCloud.Location(:,:,3),[],1)';
-    xyz = [x; y; z];
-    k = find(ptCloud.Location(:,:,2) > -0.30);
-    xyz = xyz(:,k);
-    k = find(xyz(2,:) < -0.29);
-    xyz = xyz(:,k);
-    
-%     view(player,ptCloud);
-
-    plot(xyz(1,:), xyz(3,:),'.');
-    xlabel('x');
-    ylabel('y');
-    %    zlabel('z');
-    axis equal;
-    axis([-5 5 0 9]);
-    drawnow;
-    
-    fprintf('Picture: %d\n',i);
-    scans{i} = lidarScan(double([xyz(1,:)',xyz(3,:)']));
-%     pause();
-end
-
-%% Release the devices
-release(colorDevice);
-release(depthDevice);
-
-input('Press a key to continue');
-
-
-%%
-% A floor plan and approximate path of the robot are provided for
-% illustrative purposes. This image shows the relative environment being
-% mapped and the approximate trajectory of the robot.
-%
-% <<floorPlanWithTrajectory.png>>
-
 %% Run SLAM Algorithm, Construct Optimized Map and Plot Trajectory of the Robot
 % Create a |<docid:robotics_ref.mw_d7ab99c9-fd98-4516-8932-2a69004eaaba robotics.LidarSLAM>| 
 % object and set the map resolution and the max lidar range. This example
@@ -103,9 +6,9 @@ input('Press a key to continue');
 % meters. Set the max lidar range slightly smaller than the max scan range
 % (8m), as the laser readings are less accurate near max range. Set the
 % grid map resolution to 20 cells per meter, which gives a 5cm precision.
-
-maxLidarRange = 6;
-mapResolution = 20;
+close all;
+maxLidarRange = 8;
+mapResolution = 30;
 slamAlg = robotics.LidarSLAM(mapResolution, maxLidarRange)
 
 %%
@@ -125,21 +28,21 @@ slamAlg.LoopClosureSearchRadius = 8;
 % printed if added to the map. The object rejects scans if the distance 
 % between scans is too small. Add the first 10 scans first to test 
 % your algorithm.
-
-for i=1:10
-    [isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, scans{i});
-    if isScanAccepted
-        fprintf('Added scan %d \n', i);
-    end
-end
-
-%%
-% Reconstruct the scene by plotting the scans and poses tracked by the
-% |slamAlg|.
-
-figure;
-show(slamAlg);
-title({'Map of the Environment','Pose Graph for Initial 10 Scans'});    
+% 
+% for i=1:10
+%     [isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, scans{i});
+%     if isScanAccepted
+%         fprintf('Added scan %d \n', i);
+%     end
+% end
+% 
+% %%
+% % Reconstruct the scene by plotting the scans and poses tracked by the
+% % |slamAlg|.
+% 
+% figure;
+% show(slamAlg);
+% title({'Map of the Environment','Pose Graph for Initial 10 Scans'});    
 
 %% Observe the Effect of Loop Closures and the Optimization Process 
 % Continue to add scans in a loop. Loop closures should be automatically
@@ -154,23 +57,31 @@ title({'Map of the Environment','Pose Graph for Initial 10 Scans'});
 
 firstTimeLCDetected = false;
 
-figure;
-for i=10:length(scans)
+figure();
+
+for i=1:length(scans)
+    fprintf('Doing scan %d \n', i);
+    plot(scans{1,i}.Cartesian(:,1), scans{1,i}.Cartesian(:,2), 'b.');
+    grid on;
+    axis equal;
+    axis([-5 5 0 8]);
+    drawnow;
+    
     [isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, scans{i});
     if ~isScanAccepted
         continue;
     end
     % visualize the first detected loop closure, if you want to see the
     % complete map building process, remove the if condition below
-    if optimizationInfo.IsPerformed && ~firstTimeLCDetected
-        show(slamAlg, 'Poses', 'off');
-        hold on;
-        show(slamAlg.PoseGraph); 
-        hold off;
-        firstTimeLCDetected = true;
-        drawnow
-    end
-    fprintf('Doing scan %d \n', i);
+%     if optimizationInfo.IsPerformed && ~firstTimeLCDetected
+%         show(slamAlg, 'Poses', 'off');
+%         hold on;
+%         show(slamAlg.PoseGraph); 
+%         hold off;
+%         firstTimeLCDetected = true;
+%         drawnow
+%     end
+
 end
 title('First loop closure');
 

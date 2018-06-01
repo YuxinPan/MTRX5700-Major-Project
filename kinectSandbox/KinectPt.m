@@ -1,4 +1,7 @@
 %% If we haven't released the devices, then release them
+clear all;
+close all;
+clc;
 exist colorDevice;
 if ans
     release(colorDevice);
@@ -13,45 +16,59 @@ depthDevice = imaq.VideoDevice('kinect',2)
 colorImage = step(colorDevice);
 depthImage = step(depthDevice);
 
-ptCloud = pcfromkinect(depthDevice,depthImage,colorImage);
+ptCloud = pcfromkinect(depthDevice,depthImage);
+
+gridStep = 0.2;
+ptCloudOut = pcdownsample(ptCloud,'gridAverage',gridStep)
 
 % player = pcplayer(ptCloud.XLimits,ptCloud.YLimits,ptCloud.ZLimits,...
 %     'VerticalAxis','y','VerticalAxisDir','down');
-% 
+% player2 = pcplayer(ptCloudOut.XLimits,ptCloudOut.YLimits,ptCloudOut.ZLimits,...
+%     'VerticalAxis','y','VerticalAxisDir','down');
+
 % xlabel(player.Axes,'X (m)');
 % ylabel(player.Axes,'Y (m)');
 % zlabel(player.Axes,'Z (m)');
 
-% Show 500 images
+
     figure(1);
     hold off;
     grid on;
-for i = 1:500
+while 1
     colorImage = step(colorDevice);
     depthImage = step(depthDevice);
     
     ptCloud = pcfromkinect(depthDevice,depthImage);
-    x = reshape(ptCloud.Location(:,:,1),[],1)';
-    y = reshape(ptCloud.Location(:,:,2),[],1)';
-    z = reshape(ptCloud.Location(:,:,3),[],1)';
-    xyz = [x; y; z];
-    k = find(ptCloud.Location(:,:,2) > -0.30);
-    xyz = xyz(:,k);
-    k = find(xyz(2,:) < -0.28);
-    xyz = xyz(:,k);
+    ptCloudOut = pcdownsample(ptCloud,'gridAverage',gridStep);
     
-%     view(player,ptCloud);
+%     x = reshape(ptCloudOut.Location(:,:,1),[],1)';
+%     y = reshape(ptCloudOut.Location(:,:,2),[],1)';
+%     z = reshape(ptCloudOut.Location(:,:,3),[],1)';
+    
+    xyz = ptCloudOut.Location;
+    k = find(xyz(:,2) > 0);
+    xyz = xyz(k,:);
+    k = find(xyz(:,2) < 0.2);
+    xyz = xyz(k,:);
+    fprintf('Point count: %d\n',size(xyz,1));
+    
 
-    plot(xyz(1,:), xyz(3,:),'.');
+%     view(player,ptCloud);
+%     view(player2,ptCloudOut);
+    
+    
+    
+    subplot(1,2,1);
+    plot(xyz(:,1), xyz(:,3),'.');
     xlabel('x');
-    ylabel('y');
-    %    zlabel('z');
+    ylabel('z');
+    grid on;
     axis equal;
     axis([-5 5 0 9]);
+    subplot(1,2,2);
+    imagesc(flipdim(colorImage,2));
+    axis equal;
     drawnow;
     
 
 end
-%% Release the devices
-release(colorDevice);
-release(depthDevice);
