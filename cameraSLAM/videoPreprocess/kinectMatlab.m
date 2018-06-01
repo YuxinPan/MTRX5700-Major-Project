@@ -37,6 +37,7 @@ for i = 1:inf
 
    imwrite(resizedColorImage,strcat(strcat('D:\VirtualBox\share\rgb\',num2str(i),'.jpg')))
    imwrite(depthImage,strcat(strcat('D:\VirtualBox\share\depth\',num2str(i),'.png')))
+   
 % 
 %    ptCloud = pcfromkinect(depthDevice,depthImage);
 %    x = reshape(ptCloud.Location(:,:,1),[],1)';

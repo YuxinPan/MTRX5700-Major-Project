@@ -83,8 +83,8 @@ iterations = totalTime / dt;
 p1 = plot(0,0,'rx');
 SetFwdVelRadiusRoomba(serialObject, 0.2, 0.4);
 %wait 1 second
-for ticks = 1:iterations
-   pause(dt);
+while 1
+   %pause(dt);
    angle = angle + AngleSensorRoomba(serialObject);
    dist = DistanceSensorRoomba(serialObject);
    x = x + dist * cos(angle);
@@ -92,12 +92,74 @@ for ticks = 1:iterations
    
    totalDistance = totalDistance+dist;
     
+   F = [1 0 dist* sin(x_est(3));
+        0 1 dist* cos(x_est(3));
+        0 0 1];
+   P = F*P*F' + Q;
+
+
+    % perform a prediction
+    x_est = [x_est(1) + dist* cos(x_est(3));
+        x_est(2) + dist* sin(x_est(3));
+        x_est(3) + angle];
+   
+   
    p2 = plot(x,y,'b.');
    set(p1,'Visible','off')
    p1 = plot(x,y,'rx');
    drawnow;
    
    fprintf('T: %f angle: %f x: %f y: %f\n',ticks * 0.25, angle, x, y);
+   
+   
+   
+   
+   
+   
+   
+    z = [x_est(1);
+        x_est(2);
+        headingObs];
+
+    z_est = H*x_est;
+    inn = z - z_est;
+
+    if inn(3) > pi
+        inn(3) = inn(3) - 2 * pi;
+    elseif inn(3) < -pi
+        inn(3) = inn(3) + 2 * pi;
+    end
+
+    inn_store = [inn_store inn];
+
+    S = H*P*H' + R;
+    S_store = [S_store S];
+
+    W = P*H'*inv(S);
+
+    x_est = x_est + W*inn;
+    if x_est(3) > pi
+        x_est(3) = x_est(3) - 2 * pi;
+    elseif x_est(3) < -pi
+        x_est(3) = x_est(3) + 2 * pi;
+    end
+    fprintf('Comp t: %d headingObs: %2.1f headingEst: %2.1f\n',time, headingObs, x_est(3));
+    P = P - W*S*W';
+    p1 = plot(x_est(1), x_est(2), 'g.');
+
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
    if mod(ticks,3)==0
        s = urlread(strcat('http://mechatronics.top/demo/io.php?act=add&x=',num2str(x),'&y=',num2str(y),'&reset=',num2str(resetFlag)));
    end
