@@ -102,14 +102,24 @@ void loop()
 //            sampleCount = 0;
 //            lastRate = now;
 //        }
-        if ((now - lastDisplay) >= DISPLAY_INTERVAL) {
-            lastDisplay = now;
-//          RTMath::display("Gyro:", (RTVector3&)imu->getGyro());                // gyro data
-//          RTMath::display("Accel:", (RTVector3&)imu->getAccel());              // accel data
-//          RTMath::display("Mag:", (RTVector3&)imu->getCompass());              // compass data
-            RTMath::displayRollPitchYaw("Pose:", (RTVector3&)fusion.getFusionPose()); // fused output
+
+
+//        if ((now - lastDisplay) >= DISPLAY_INTERVAL) {
+//            lastDisplay = now;
+////          RTMath::display("Gyro:", (RTVector3&)imu->getGyro());                // gyro data
+////          RTMath::display("Accel:", (RTVector3&)imu->getAccel());              // accel data
+////          RTMath::display("Mag:", (RTVector3&)imu->getCompass());              // compass data
+//            RTMath::displayRollPitchYaw("Pose:", (RTVector3&)fusion.getFusionPose()); // fused output
+//           Serial.println();
+//        }
+
+   if (Serial.available()) {
+    if (Serial.read() == 'r') {                  // save the data
+RTMath::displayRollPitchYaw("Pose:", (RTVector3&)fusion.getFusionPose()); // fused output
            Serial.println();
-        }
+    }
+  }
+        
     }
 }
 

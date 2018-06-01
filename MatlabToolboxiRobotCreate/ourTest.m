@@ -52,7 +52,8 @@ R = [0.5^2 0 0;
 
 
 
-
+IMUserial = serial('COM3')
+fopen(IMUserial)
 
 
 
@@ -114,7 +115,8 @@ while 1
    
    
    
-   
+   fprintf(s,'r');
+
    
    
     z = [x_est(1);
