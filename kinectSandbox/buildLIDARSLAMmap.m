@@ -8,7 +8,7 @@
 % grid map resolution to 20 cells per meter, which gives a 5cm precision.
 close all;
 maxLidarRange = 8;
-mapResolution = 30;
+mapResolution = 20;
 slamAlg = robotics.LidarSLAM(mapResolution, maxLidarRange)
 
 %%

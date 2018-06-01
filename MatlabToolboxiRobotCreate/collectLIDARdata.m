@@ -55,7 +55,7 @@ ptCloud = pcfromkinect(depthDevice,depthImage,colorImage);
     hold off;
 
     beep on;
-for i = 1:40
+for i = 1:80
     beep;
     colorImage = step(colorDevice);
     depthImage = step(depthDevice);
@@ -86,7 +86,7 @@ for i = 1:40
     
     fprintf('Picture: %d\n',i);
     scans{i} = lidarScan(double([xyz(:,1),xyz(:,3)]));
-    pause(1);
+    pause(0.5);
 end
 
 %% Release the devices
