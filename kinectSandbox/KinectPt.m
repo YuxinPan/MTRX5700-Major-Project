@@ -21,14 +21,14 @@ ptCloud = pcfromkinect(depthDevice,depthImage);
 gridStep = 0.2;
 ptCloudOut = pcdownsample(ptCloud,'gridAverage',gridStep)
 
-% player = pcplayer(ptCloud.XLimits,ptCloud.YLimits,ptCloud.ZLimits,...
-%     'VerticalAxis','y','VerticalAxisDir','down');
-% player2 = pcplayer(ptCloudOut.XLimits,ptCloudOut.YLimits,ptCloudOut.ZLimits,...
-%     'VerticalAxis','y','VerticalAxisDir','down');
+player = pcplayer(ptCloud.XLimits,ptCloud.YLimits,ptCloud.ZLimits,...
+    'VerticalAxis','y','VerticalAxisDir','down');
+player2 = pcplayer(ptCloudOut.XLimits,ptCloudOut.YLimits,ptCloudOut.ZLimits,...
+    'VerticalAxis','y','VerticalAxisDir','down');
 
-% xlabel(player.Axes,'X (m)');
-% ylabel(player.Axes,'Y (m)');
-% zlabel(player.Axes,'Z (m)');
+xlabel(player.Axes,'X (m)');
+ylabel(player.Axes,'Y (m)');
+zlabel(player.Axes,'Z (m)');
 
 
     figure(1);
@@ -53,22 +53,22 @@ while 1
     fprintf('Point count: %d\n',size(xyz,1));
     
 
-%     view(player,ptCloud);
-%     view(player2,ptCloudOut);
+    view(player,ptCloud);
+    view(player2,ptCloudOut);
     
     
     
-    subplot(1,2,1);
-    plot(xyz(:,1), xyz(:,3),'.');
-    xlabel('x');
-    ylabel('z');
-    grid on;
-    axis equal;
-    axis([-5 5 0 9]);
-    subplot(1,2,2);
-    imagesc(flipdim(colorImage,2));
-    axis equal;
-    drawnow;
+%     subplot(1,2,1);
+%     plot(xyz(:,1), xyz(:,3),'.');
+%     xlabel('x');
+%     ylabel('z');
+%     grid on;
+%     axis equal;
+%     axis([-5 5 0 9]);
+%     subplot(1,2,2);
+%     imagesc(flipdim(colorImage,2));
+%     axis equal;
+%     drawnow;
     
 
 end
