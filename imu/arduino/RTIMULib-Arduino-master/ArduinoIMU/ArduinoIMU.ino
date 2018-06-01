@@ -53,15 +53,16 @@ void setup()
     Wire.begin();
     imu = RTIMU::createIMU(&settings);                        // create the imu object
   
-    Serial.print("ArduinoIMU starting using device "); Serial.println(imu->IMUName());
+    //Serial.print("ArduinoIMU starting using device "); Serial.println(imu->IMUName());
     if ((errcode = imu->IMUInit()) < 0) {
         Serial.print("Failed to init IMU: "); Serial.println(errcode);
     }
   
-    if (imu->getCalibrationValid())
-        Serial.println("Using compass calibration");
-    else
-        Serial.println("No valid compass calibration data");
+    if (imu->getCalibrationValid()){
+        //Serial.println("Using compass calibration");
+        }
+    //else
+    //    Serial.println("No valid compass calibration data");
 
     lastDisplay = lastRate = millis();
     sampleCount = 0;
@@ -115,7 +116,8 @@ void loop()
 
    if (Serial.available()) {
     if (Serial.read() == 'r') {                  // save the data
-RTMath::displayRollPitchYaw("Pose:", (RTVector3&)fusion.getFusionPose()); // fused output
+RTMath::displayRollPitchYaw("",(RTVector3&)fusion.getFusionPose()); // fused output
+
            Serial.println();
     }
   }

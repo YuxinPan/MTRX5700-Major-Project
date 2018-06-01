@@ -3,7 +3,7 @@ close all;
 clc;
 
 resetFlag = 0;
-s = urlread('http://mechatronics.top/demo/io.php?act=reset');
+s = urlread('http://mechatronics.top/demo/io.php?act=reset','Timeout',2);
 
 
 
@@ -55,7 +55,9 @@ R = [0.5^2 0 0;
 IMUserial = serial('COM3')
 fopen(IMUserial)
 
-
+fprintf(IMUserial,'r');
+text = fscanf(IMUserial)
+headingOffset = str2num(extractAfter(text,"yaw:"))
 
 
 
@@ -114,14 +116,16 @@ while 1
    
    
    
-   
-   fprintf(s,'r');
+   % start polling heading
+   fprintf(IMUserial,'r');
+   text = fscanf(IMUserial)
+   heading = str2num(extractAfter(text,"yaw:"))
 
    
    
     z = [x_est(1);
         x_est(2);
-        headingObs];
+        heading-headingOffset];
 
     z_est = H*x_est;
     inn = z - z_est;
@@ -145,7 +149,7 @@ while 1
     elseif x_est(3) < -pi
         x_est(3) = x_est(3) + 2 * pi;
     end
-    fprintf('Comp t: %d headingObs: %2.1f headingEst: %2.1f\n',time, headingObs, x_est(3));
+    fprintf('Comp t: %d headingEst: %2.1f\n',time, x_est(3));
     P = P - W*S*W';
     p1 = plot(x_est(1), x_est(2), 'g.');
 
