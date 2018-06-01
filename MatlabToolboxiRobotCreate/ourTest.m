@@ -2,6 +2,10 @@ clear all;
 close all;
 clc;
 
+
+warning('off','all') % don't want warning to stop whole system
+
+
 resetFlag = 0;
 s = urlread('http://mechatronics.top/demo/io.php?act=reset','Timeout',2.5);
 
@@ -25,7 +29,7 @@ axis equal
 % initUncertainty = [0.1; 0.5];
 x_est = [0;
     0;
-    0];
+    90/180*pi];
 P = zeros(3,3);
 % P(1,1) = initUncertainty(1,1)^2;
 % P(2,2) = initUncertainty(2,1)^2;
@@ -58,7 +62,7 @@ pause(10)
 fprintf(IMUserial,'r');
 text = fscanf(IMUserial)
 headingOffset = str2num(extractAfter(text,"yaw:"))
-
+headingOffset = (headingOffset-90)/180*pi
 
 
 
@@ -88,10 +92,12 @@ SetFwdVelRadiusRoomba(serialObject, 0.2, 0.4);
 %wait 1 second
 while 1
    %pause(dt);
-   angle = angle + AngleSensorRoomba(serialObject);
+   angleChange = AngleSensorRoomba(serialObject);
+   angle = angle + angleChange;
+   
    dist = DistanceSensorRoomba(serialObject);
-   x = x + dist * cos(angle);
-   y = y + dist * sin(angle);
+   %x = x + dist * cos(angle);
+   %y = y + dist * sin(angle);
    
    totalDistance = totalDistance+dist;
     
@@ -104,29 +110,34 @@ while 1
     % perform a prediction
     x_est = [x_est(1) + dist* cos(x_est(3));
         x_est(2) + dist* sin(x_est(3));
-        x_est(3) + angle];
+        x_est(3) - angleChange];
    
    
    p2 = plot(x_est(1),x_est(2),'b.');
-   set(p1,'Visible','off')
-   p1 = plot(x_est(1),x_est(2),'rx');
    drawnow;
    
-   fprintf('angle: %f x: %f y: %f\n', angle, x, y);
+   %fprintf('angleChange: %f x: %f y: %f\n', angleChange, x, y);
    
    
    
    % start polling heading
    fprintf(IMUserial,'r');
-   text = fscanf(IMUserial)
-   heading = str2num(extractAfter(text,"yaw:"))
-
+   text = fscanf(IMUserial);
+   heading = str2num(extractAfter(text,"yaw:"));
+   heading = heading/180*pi;
    
    
     z = [x_est(1);
         x_est(2);
         heading-headingOffset];
 
+    
+    if z(3) > pi
+        z(3) = z(3) - 2 * pi;
+    elseif z(3) < -pi
+        z(3) = z(3) + 2 * pi;
+    end
+    
     z_est = H*x_est;
     inn = z - z_est;
 
@@ -149,7 +160,7 @@ while 1
     elseif x_est(3) < -pi
         x_est(3) = x_est(3) + 2 * pi;
     end
-    fprintf('xEst: %2.1f yEst: %2.1f headingEst: %2.1f\n', x_est(1),x_est(2),x_est(3));
+    fprintf('xEst: %2.1f yEst: %2.1f headingEst: %2.1f headingMag-offset: %2.1f angleChange: %2.f\n', x_est(1),x_est(2),x_est(3)*180/pi,(heading-headingOffset)*180/pi,angleChange*180/pi);
     P = P - W*S*W';
     %p1 = plot(x_est(1), x_est(2), 'g.');
 
