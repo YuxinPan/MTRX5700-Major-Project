@@ -11,7 +11,7 @@ end
 beep on;
 
 %% Set up LIDAR SLAM
-maxLidarRange = 8;
+maxLidarRange = 7;
 mapResolution = 30;
 slamAlg = robotics.LidarSLAM(mapResolution, maxLidarRange);
 slamAlg.LoopClosureThreshold = 100;
@@ -27,8 +27,8 @@ colorDevice = imaq.VideoDevice('kinect',1)
 depthDevice = imaq.VideoDevice('kinect',2)
 [serialObject] = RoombaInit(3)  % this is the serial port
 scans = {};
-vel = 0.025 ;
-SetFwdVelRadiusRoomba(serialObject, vel, 0);
+vel = 0.2 ;
+SetFwdVelRadiusRoomba(serialObject, vel, inf);
 
 %Initialise state
 angle = pi/2;xx = 0; yy = 0;
@@ -44,11 +44,12 @@ while 1
     % Get encoder data
     angleChange = AngleSensorRoomba(serialObject);
     angle = angle + angleChange;
-    dist = DistanceSensorRoomba(serialObject)
+    [dist] = DistanceSensorRoomba(serialObject);
     xx = xx + dist * cos(angle);
     yy = yy + dist * sin(angle);
     
-    subplot(1,3,2);
+    % Plot dead reckoning
+    subplot(1,3,1);
     hold on;
     grid on;
     axis equal;
@@ -57,12 +58,12 @@ while 1
     
     
     
-    
+    % Plot LIDAR data
     subplot(1,3,2);
     thisScan = getFakeLIDAR(depthDevice);
     scans{end+1} = thisScan;
     
-    tic
+    
     [isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, scans{end});
     t(ii) = toc;
     
@@ -71,23 +72,30 @@ while 1
     grid on;
     axis equal;
     axis([-5 5 0 8]);
+    
+    
     [scans, optimizedPoses]  = scansAndPoses(slamAlg);
     
+    
+    % Plot SLAM model and robot position
     subplot(1,3,3);
     show(slamAlg);
     %     SSetFwdVelRadiusRoomba(serPort, roombaSpeed, 0);
     currentPose = optimizedPoses(size(optimizedPoses,1),:);
-    fprintf('Time to run SLAM: %d LIDAR pose: %f,%f,%f deadRec: %f,%f,%f\n',t(ii),currentPose(1),currentPose(2),currentPose(3),xx,yy,angle);
+    fprintf('Time stamp: %d LIDAR pose: %f,%f,%f deadRec: %f,%f,%f\n',t(ii),currentPose(1),currentPose(2),currentPose(3),xx,yy,angle);
     %     vel = vel * -1;
+    
+    % Show the figure
+    drawnow;
     
     
     % Stop running after however many seconds
-    if t(ii) > 20
+    if t(ii) > 10
         break;
     end
 end
 % Stop moving
-SetFwdVelRadiusRoomba(serialObject, 0, 0);
+SetFwdVelRadiusRoomba(serialObject, 0, inf);
 release(colorDevice);
 release(depthDevice);
 disp('Script ended');

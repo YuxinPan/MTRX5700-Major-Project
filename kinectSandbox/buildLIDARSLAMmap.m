@@ -4,7 +4,7 @@
 % uses a Jackal(TM) robot from Clearpath Robotics(TM). The robot is
 % equipped with a SICK(TM) TiM-511 laser scanner with a max range of 10
 % meters. Set the max lidar range slightly smaller than the max scan range
-% (8m), as the laser readings are less accurate near max range. Set the
+% (8m), as the laser readings are less accurate near max range. Set the 
 % grid map resolution to 20 cells per meter, which gives a 5cm precision.
 close all;
 maxLidarRange = 8;
