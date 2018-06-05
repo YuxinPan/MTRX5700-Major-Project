@@ -8,7 +8,7 @@
 % grid map resolution to 20 cells per meter, which gives a 5cm precision.
 close all;
 maxLidarRange = 8;
-mapResolution = 20;
+mapResolution = 15;
 slamAlg = robotics.LidarSLAM(mapResolution, maxLidarRange)
 
 %%
@@ -20,8 +20,11 @@ slamAlg = robotics.LidarSLAM(mapResolution, maxLidarRange)
 % Using a higher loop closure search radius allows the algorithm to search a
 % wider range of the map around current pose estimate for loop closures.
 
-slamAlg.LoopClosureThreshold = 210;  
-slamAlg.LoopClosureSearchRadius = 8;    
+slamAlg.LoopClosureThreshold = 100;  
+slamAlg.LoopClosureSearchRadius = 1;    
+slamAlg.LoopClosureAutoRollback = false;
+% slamAlg.OptimzationInterval = 99999;
+slanAlg.LoopClosureMaxAttempts = 0;
 
 %% Observe the Map Building Process with Initial 10 Scans
 % Incrementally add scans to the |slamAlg| object. Scan numbers are
@@ -60,17 +63,22 @@ firstTimeLCDetected = false;
 figure();
 
 for i=1:length(scans)
+    [isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, scans{i});
     fprintf('Doing scan %d \n', i);
+    subplot(1,2,1);
     plot(scans{1,i}.Cartesian(:,1), scans{1,i}.Cartesian(:,2), 'b.');
     grid on;
     axis equal;
     axis([-5 5 0 8]);
+    subplot(1,2,2);
+    show(slamAlg);
     drawnow;
     
-    [isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, scans{i});
+    
     if ~isScanAccepted
         continue;
     end
+    
     % visualize the first detected loop closure, if you want to see the
     % complete map building process, remove the if condition below
 %     if optimizationInfo.IsPerformed && ~firstTimeLCDetected
@@ -114,7 +122,7 @@ map = buildMap(scans, optimizedPoses, mapResolution, maxLidarRange);
 %%
 % Visualize the occupancy grid map populated with the laser scans and the
 % optimized pose graph.
-
+    
 figure; 
 show(map);
 hold on
