@@ -29,9 +29,9 @@ counter = 2;
 % Initialize communication
 [serialObject] = RoombaInit(18)  % this is the serial port
 
-SetFwdVelRadiusRoomba(serialObject, 0.2, inf);
+SetFwdVelRadiusRoomba(serialObject, 0.1, inf);
 
-
+translation = [];
 
 for i = 1:inf    
    colorImage = step(colorDevice);  
@@ -57,7 +57,7 @@ for i = 1:inf
    
    if exist(fname)>1
        fileID = fopen(fname,'r');
-       translation = fscanf(fileID,'[%f,%f,%f]')
+       translation[] = fscanf(fileID,'[%f,%f,%f]')
        fclose(fileID);
        delete(fname);
    end
