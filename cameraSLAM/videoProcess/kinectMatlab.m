@@ -1,5 +1,5 @@
-%release(colorDevice);
-%release(depthDevice);
+release(colorDevice);
+release(depthDevice);
 
 colorDevice = imaq.VideoDevice('kinect',1)
 
@@ -12,6 +12,8 @@ step(depthDevice);
 colorImage = step(colorDevice);  
 depthImage = step(depthDevice);
 
+counter = 2;
+
 % ptCloud = pcfromkinect(depthDevice,depthImage,colorImage);
 % 
 % player = pcplayer(ptCloud.XLimits,ptCloud.YLimits,ptCloud.ZLimits,...
@@ -21,6 +23,15 @@ depthImage = step(depthDevice);
 % ylabel(player.Axes,'Y (m)');
 % zlabel(player.Axes,'Z (m)');
 % 
+
+
+
+% Initialize communication
+[serialObject] = RoombaInit(18)  % this is the serial port
+
+SetFwdVelRadiusRoomba(serialObject, 0.2, inf);
+
+
 
 for i = 1:inf    
    colorImage = step(colorDevice);  
@@ -38,6 +49,18 @@ for i = 1:inf
    imwrite(resizedColorImage,strcat(strcat('D:\VirtualBox\share\rgb\',num2str(i),'.jpg')))
    imwrite(depthImage,strcat(strcat('D:\VirtualBox\share\depth\',num2str(i),'.png')))
    
+   while exist(strcat('D:\VirtualBox\share\textdata\',num2str(i),'.txt'))>1
+       i = i+1
+   end
+   
+   fname = strcat('D:\VirtualBox\share\textdata\',num2str(i-2),'.txt');
+   
+   if exist(fname)>1
+       fileID = fopen(fname,'r');
+       translation = fscanf(fileID,'[%f,%f,%f]')
+       fclose(fileID);
+       delete(fname);
+   end
 % 
 %    ptCloud = pcfromkinect(depthDevice,depthImage);
 %    x = reshape(ptCloud.Location(:,:,1),[],1)';
