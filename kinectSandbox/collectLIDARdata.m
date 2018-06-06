@@ -4,7 +4,7 @@ close all;
 clear all;
 clc;
 
-gridAve = 0.2;
+gridAve = 0.05;
 % This example demonstrates how to implement the Simultaneous Localization
 % And Mapping (SLAM) algorithm on a collected series of lidar scans using
 % pose graph optimization. The goal of this example is to build a map of
@@ -43,12 +43,14 @@ depthImage = step(depthDevice);
 
 ptCloud = pcfromkinect(depthDevice,depthImage,colorImage);
 
-% player = pcplayer(ptCloud.XLimits,ptCloud.YLimits,ptCloud.ZLimits,...
-%     'VerticalAxis','y','VerticalAxisDir','down');
-% 
-% xlabel(player.Axes,'X (m)');
-% ylabel(player.Axes,'Y (m)');
-% zlabel(player.Axes,'Z (m)');
+player = pcplayer(ptCloud.XLimits,ptCloud.YLimits,ptCloud.ZLimits,...
+    'VerticalAxis','y','VerticalAxisDir','down');
+player2 = pcplayer(ptCloud.XLimits,ptCloud.YLimits,ptCloud.ZLimits,...
+    'VerticalAxis','y','VerticalAxisDir','down');
+
+xlabel(player.Axes,'X (m)');
+ylabel(player.Axes,'Y (m)');
+zlabel(player.Axes,'Z (m)');
 
 % Show 500 images
     figure(1);
@@ -61,20 +63,23 @@ for i = 1:80
     depthImage = step(depthDevice);
     
     ptCloud = pcfromkinect(depthDevice,depthImage);
-    ptCloudOut = pcdownsample(ptCloud,'gridAverage',gridAve);
+%     ptCloudOut = ptCloud;   
+%     ptCloudOut = pcdownsample(ptCloud,'nonuniformGridSample',60);
+    ptCloud2 = pcdenoise(ptCloud);
+    ptCloudOut = pcdownsample(ptCloud2,'gridAverage',gridAve);
     
 %     x = reshape(ptCloudOut.Location(:,:,1),[],1)';
 %     y = reshape(ptCloudOut.Location(:,:,2),[],1)';
 %     z = reshape(ptCloudOut.Location(:,:,3),[],1)';
     
     xyz = ptCloudOut.Location;
-    k = find(xyz(:,2) > 0);
+    k = find(xyz(:,2) > -0.3);
     xyz = xyz(k,:);
-    k = find(xyz(:,2) < gridAve);
+    k = find(xyz(:,2) < gridAve-0.3);
     xyz = xyz(k,:);
     fprintf('Point count: %d\n',size(xyz,1));
-%     view(player,ptCloud);
-
+    view(player,ptCloud);
+    view(player2,ptCloud2);
     plot(xyz(:,1), xyz(:,3),'.');
     xlabel('x');
     ylabel('z');
