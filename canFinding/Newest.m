@@ -59,7 +59,8 @@ hBlob.MaximumBlobArea = 100000;
 stats = [regionprops(cansBinaryImage,'Centroid', 'area', 'BoundingBox', 'PixelIdxList')];
 figure(1);
 hold on;
-imshow(not(cansBinaryImage));
+% imshow(not(cansBinaryImage));
+imshow(colorImage);
 
 % Increment for creating an array of can positions
 iii = 0;
