@@ -1,16 +1,14 @@
-clc;
-load('workspace4yuxin.mat')
-
+function myOccupancyShow=pathPlan(map,goalXY)
 myOccupancy = [];
 a = 0;
 b = 0;
 
-startX=3.3; % in plotting, x is horizontal
-startY=-4.4;
-endX=-3.8;
-endY=2;
+startX=0.0; % in plotting, x is horizontal
+startY=0.0;
+endX=goalXY(1);
+endY=goalXY(2);
 
-gridSize = 0.18;
+gridSize = 0.22;
 
 % convert world frame to value close to 2D matrix index
 startX = (startX-map.XWorldLimits(1))/gridSize;
@@ -115,10 +113,10 @@ end
 
 myOccupancyShow = flipud(myOccupancyShow);
 
-figure();
-imagesc(myOccupancyShow);
-figure();
-show(map);
+%figure();
+%imagesc(myOccupancyShow);
+%figure();
+%show(map);
 
 
 % function nodeIndex = findNodeIndex(row,col,m,n)
