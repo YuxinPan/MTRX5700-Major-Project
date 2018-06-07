@@ -288,12 +288,25 @@ for i=map.XWorldLimits(1):0.1:map.XWorldLimits(2)
     a = a+1;
     for j=map.YWorldLimits(1):0.1:map.YWorldLimits(2)
         b=b+1;
-        myOccupancy(a,b) = getOccupancy(map,[i j]);
+        myOccupancy(b,a) = getOccupancy(map,[i j]);
+        if myOccupancy(b,a)<0.3
+            myOccupancy(b,a)=0;
+        else
+            myOccupancy(b,a)=1;
+        end
     end
     b = 0;
 end
+myOccupancy = flipud(myOccupancy);
+
 figure();
 imagesc(myOccupancy);
+
+
+
+
+
+
 %%
 
 
