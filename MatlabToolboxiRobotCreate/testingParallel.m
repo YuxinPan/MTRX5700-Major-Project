@@ -394,7 +394,7 @@ function [objectPos,canCount] = canDetection(colorImage,depthImage,depthDevice)
     I_red = I_red & (I_sat>0.5) & (I_val > 0.6);
     se = strel('disk',40);
     cansBinaryImage = imclose(I_red,se);
-
+    
     stats = [regionprops(cansBinaryImage,'Centroid', 'area', 'BoundingBox', 'PixelIdxList')];
 
     % Increment for creating an array of can positions
