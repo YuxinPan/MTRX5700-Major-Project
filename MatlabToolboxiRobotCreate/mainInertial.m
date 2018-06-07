@@ -40,7 +40,7 @@ depthDevice = imaq.VideoDevice('kinect',2)
 
 
 
-[serialObject] = RoombaInit(3)  % this is the serial port
+[serialObject] = RoombaInit(18)  % this is the serial port
 % To hold our LIDAR scans
 scans = {};
 
@@ -243,9 +243,18 @@ while 1
     goalXY_body = (goalXY_inertial - [currentPose(1);currentPose(2)]);
     goalXY_body = iner2bodyM * goalXY_body;
     
-    angleDiff = -atan(goalXY_body(1)/goalXY_body(2));
+    angleDiff = -atan2(goalXY_body(1),goalXY_body(2));
     distToTravel = norm([goalXY_body(1),goalXY_body(2)]);
-    if rad2deg(angleDiff) > 7
+    if distToTravel < 0.3 && goalXY_inertial(1) == 0 && goalXY_inertial(2) == 0
+        fprintf('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Yay we''re home\n');
+        break;
+    elseif distToTravel < 0.3
+        fprintf('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! We''ve got the can\n');
+        canRetreived = true;
+        goalXY_inertial = [0;0];
+        
+        
+    elseif rad2deg(angleDiff) > 7
         turnAngle(serialObject, 0.1, 7);
     elseif rad2deg(angleDiff) < -7
         turnAngle(serialObject, 0.1, -7);
@@ -265,12 +274,7 @@ while 1
             fprintf('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Turning off can finding\n');
             canRetreived = true;
         end
-        if distToTravel < 0.3
-            fprintf('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! We''ve got the can\n');
-            canRetreived = true;
-            goalXY_inertial = [0;0];
-            
-        end
+
     end
     
     fprintf('currentPose: %.3f angleDiff: %.3f distToTravel: %.3f \n',rad2deg(currentPose(3)),rad2deg(angleDiff), distToTravel);
@@ -306,9 +310,9 @@ while 1
     scans{end+1} = thisScan;
     
     % Add LIDAR scan to the model
-    lidarPoseEst = [currentPose(1) + dist * cos(currentPose(3)+pi/2),...
-        currentPose(2) + dist * sin(currentPose(3)+pi/2),...
-        currentPose(3) + angleChange];
+%     lidarPoseEst = [currentPose(1) + dist * cos(currentPose(3)+pi/2),...
+%         currentPose(2) + dist * sin(currentPose(3)+pi/2),...
+%         currentPose(3) + angleChange];
     %[isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, scans{end},lidarPoseEst);
     [isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, scans{end});
     
@@ -330,7 +334,7 @@ while 1
     show(slamAlg);
     %     SSetFwdVelRadiusRoomba(serPort, roombaSpeed, 0);
     currentPose = optimizedPoses(size(optimizedPoses,1),:);
-    fprintf('Time stamp: %.2f\nLIDAR pose: %.3f,%.3f,%.3f LIDAR Pose est: %.3f,%.3f,%.3f deadRec: %.3f,%.3f,%.3f\n',t(ii),currentPose(1),currentPose(2),currentPose(3),lidarPoseEst(1),lidarPoseEst(2),lidarPoseEst(3),xx,yy,angle-pi/2);
+    fprintf('Time stamp: %.2f LIDAR pose: %.3f,%.3f,%.3f LIDAR Pose est: %.3f,%.3f,%.3f deadRec: %.3f,%.3f,%.3f\n',t(ii),currentPose(1),currentPose(2),currentPose(3),lidarPoseEst(1),lidarPoseEst(2),lidarPoseEst(3),xx,yy,angle-pi/2);
     
     % Only look for the can if we haven't retreived the can
     if canRetreived == false
@@ -411,7 +415,7 @@ k = find(xyz(:,2) > -0.3);
 xyz = xyz(k,:);
 k = find(xyz(:,2) < gridAve - 0.3);
 xyz = xyz(k,:);
-fprintf('Point count points: %d\n',size(xyz,1));
+% fprintf('Point count points: %d\n',size(xyz,1));
 %     view(player,ptCloud);
 
 %     plot(xyz(:,1), xyz(:,3),'.');
@@ -432,22 +436,24 @@ end
 
 function [objectPos,canCount] = canDetection(colorImage,depthImage,depthDevice)
 %% Try find the can
-I_hsv = rgb2hsv(colorImage);
-
-% Red sits around zero, but wraps to one.
-% I_hsv should be float values in the range [0.0, 1.0]
-lowBound = 0.98;
-highBound = 0.02;
-
-I_hue = I_hsv(:,:,1);
-I_sat = I_hsv(:,:,2);
-I_val = I_hsv(:,:,3);
-
-I_red = (I_hue > lowBound) | (I_hue < highBound);
-I_red = I_red & (I_sat>0.5) & (I_val > 0.6);
-se = strel('disk',40);
+% I_hsv = rgb2hsv(colorImage);
+% 
+% % Red sits around zero, but wraps to one.
+% % I_hsv should be float values in the range [0.0, 1.0]
+% lowBound = 0.98;
+% highBound = 0.02;
+% 
+% I_hue = I_hsv(:,:,1);
+% I_sat = I_hsv(:,:,2);
+% I_val = I_hsv(:,:,3);
+% 
+% I_red = (I_hue > lowBound) | (I_hue < highBound);
+% I_red = I_red & (I_sat>0.5) & (I_val > 0.6);
+% se = strel('disk',40);
+% cansBinaryImage = imclose(I_red,se);
+I_red = createMaskRed(colorImage);
+se = strel('disk',20);
 cansBinaryImage = imclose(I_red,se);
-
 stats = [regionprops(cansBinaryImage,'Centroid', 'area', 'BoundingBox', 'PixelIdxList')];
 
 % Increment for creating an array of can positions
