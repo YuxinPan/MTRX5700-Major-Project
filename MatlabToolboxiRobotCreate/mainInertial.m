@@ -156,7 +156,7 @@ while isempty(goalXY_inertial)
             bod2inerM = [cos(currentPose(3)), sin(currentPose(3));
                 -sin(currentPose(3)), cos(currentPose(3))]';
             
-            inerObjectPos = bod2inerM * [objectPos(1,1)+0.2;objectPos(3,1)];
+            inerObjectPos = bod2inerM * [objectPos(1,1)+0.15;objectPos(3,1)];
             inerObjectPos = inerObjectPos + [currentPose(1);currentPose(2)];
             
             hold on;
@@ -232,6 +232,8 @@ imagesc(myOccupancyShow);
 % To figure out if we've retreived the can
 canRetreived = false;
 figure(1);
+turnBackRate = 10;
+straightDistancePerIteration = 0.2;
 while 1
     
     
@@ -244,31 +246,34 @@ while 1
     goalXY_body = iner2bodyM * goalXY_body;
     
     angleDiff = -atan2(goalXY_body(1),goalXY_body(2));
+    
+    % If we're heading back home with the can, only turn right
+    if goalXY_inertial(1) == 0 && goalXY_inertial(2) == 0 && angleDiff > deg2rad(10)
+        angleDiff = angleDiff-pi;
+    end
     distToTravel = norm([goalXY_body(1),goalXY_body(2)]);
-    if distToTravel < 0.3 && goalXY_inertial(1) == 0 && goalXY_inertial(2) == 0
+    if distToTravel < straightDistancePerIteration && goalXY_inertial(1) == 0 && goalXY_inertial(2) == 0
         fprintf('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Yay we''re home\n');
         break;
-    elseif distToTravel < 0.3
+    elseif distToTravel < straightDistancePerIteration
         fprintf('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! We''ve got the can\n');
         canRetreived = true;
         goalXY_inertial = [0;0];
         
         
-    elseif rad2deg(angleDiff) > 7
-        turnAngle(serialObject, 0.1, 7);
-    elseif rad2deg(angleDiff) < -7
-        turnAngle(serialObject, 0.1, -7);
-    elseif rad2deg(angleDiff) > 3
-        turnAngle(serialObject, 0.1, angleDiff);
-    elseif rad2deg(angleDiff) < -3
-        turnAngle(serialObject, 0.1, -angleDiff);
+    elseif rad2deg(angleDiff) > turnBackRate
+        turnAngle(serialObject, 0.05, turnBackRate);
+    elseif rad2deg(angleDiff) < -turnBackRate
+        turnAngle(serialObject, 0.05, -turnBackRate);
+    elseif abs(rad2deg(angleDiff)) > 3
+        turnAngle(serialObject, 0.05, rad2deg(angleDiff));
     else % If we're within the angle goal
         % Find the distance between the robot and the goal
         
         % If we're more than 0.1m away from the goal, go there,
         % otherwise change our goal position to 0,0(back to base)
-        if distToTravel > 0.3
-            travelDist(serialObject, 0.3, 0.3);
+        if distToTravel > straightDistancePerIteration
+            travelDist(serialObject, straightDistancePerIteration, straightDistancePerIteration);
         end
         if distToTravel < 1 && canRetreived == false
             fprintf('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Turning off can finding\n');
@@ -353,7 +358,7 @@ while 1
                 fprintf('wtf\n');
             end
             
-            inerObjectPos = bod2inerM * [objectPos(1,1)+0.2;objectPos(3,1)];
+            inerObjectPos = bod2inerM * [objectPos(1,1)+0.15;objectPos(3,1)];
             inerObjectPos = inerObjectPos + [currentPose(1);currentPose(2)];
             hold on;
             
