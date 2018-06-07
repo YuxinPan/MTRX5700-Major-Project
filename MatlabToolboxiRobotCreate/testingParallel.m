@@ -206,8 +206,8 @@ end
 
 % Stop moving
 SetFwdVelRadiusRoomba(serialObject, 0, inf);
-release(colorDevice);
-release(depthDevice);
+%release(colorDevice);
+%release(depthDevice);
 fprintf('Script ended with %.0f scans after %.2f seconds, average time per scan: %.2f seconds\n',ii, t(ii), t(ii)/ii);
 figure();
 plot(timeTaken);
@@ -243,9 +243,7 @@ turnAngle(serialObject, 0.1, rad2deg(goalAngle-currentPose(3)));
 angle = 0;
 dist=0;
 currentPose=[0;0;0];
-ii=0;
 while 1
-    ii = ii + 1;
 
     % Get encoder data
     angleChange = AngleSensorRoomba(serialObject);
@@ -253,19 +251,17 @@ while 1
     % Get the image LIDAR reading ASAP
 
     [dist] = DistanceSensorRoomba(serialObject);
-%     xx = xx + dist * cos(angle);
-%     yy = yy + dist * sin(angle);
-% 
-%     scans{end+1} = thisScan;
 
-    % Add LIDAR scan to the model
     currentPose(1) = currentPose(1) + dist * cos(currentPose(3)+pi/2);
     currentPose(2) = currentPose(2) + dist * sin(currentPose(3)+pi/2);
     currentPose(3) = currentPose(3) + angleChange;
     
+    colorImage = step(colorDevice);
+    depthImage = step(depthDevice);
+    
     %% Try find the can
     [objectPos,canCount] = canDetection(colorImage,depthImage,depthDevice);
-
+    currentPose
     objectPos
     
     if size(objectPos,2) > 0 && objectPos(2,1)<0.15 && objectPos(2,1)>-0.3
@@ -291,21 +287,22 @@ while 1
         hold on;
         p3 = plot(inerObjectPos(1,:),inerObjectPos(2,:),'bx'); % this is the can detected
     end
-    
+    goalXY
         %% Control movement
     if norm(goalXY) < 1
         turnAngle(serialObject, 0.1, 7);
     else
-        goalAngle = -atand(goalXY(1)/goalXY(2));
-        angleDiff = goalAngle - rad2deg(currentPose(3));
+        goalAngle = -atan2(goalXY(1),goalXY(2));
+        angleDiff = rad2deg(goalAngle - currentPose(3));
+        fprintf('goalAngle: %.3f angleDiff: %.3f \n',goalAngle,angleDiff);
         if angleDiff > 7
-            turnAngle(serialObject, 0.1, 7);
+            turnAngle(serialObject, 0.1, angleDiff);
         elseif angleDiff < -7
-            turnAngle(serialObject, 0.1, -7);
+            turnAngle(serialObject, 0.1, angleDiff);
         else % If we're within the angle goal
             distToTravel = norm([goalXY(1)-currentPose(1),goalXY(2)-currentPose(2)]);
             if distToTravel > 0.1
-                travelDist(serialObject, 0.4, 0.4);
+                travelDist(serialObject, 0.34, 0.34);
             end
         end
     end
@@ -318,7 +315,7 @@ while 1
 %     if ~isempty(goalXY)
 %         p4 = plot(goalXY(1),goalXY(2),'kx');
 %     end
-    p4 = plot(currentPose(1),currentPose(2),'bx');
+    p4 = plot(currentPose(1),currentPose(2),'rx');
     %% Clean up
     
     % Show the figure
@@ -332,9 +329,6 @@ while 1
     %     if t(ii+1) > timeDuration
     %         break;
     %     end
-    if ii == 40 
-        break;
-    end
 end
 
 %%
@@ -422,9 +416,9 @@ function [objectPos,canCount] = canDetection(colorImage,depthImage,depthDevice)
             temp = colorImage1(:,:,1);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,1) = temp;
             temp = colorImage1(:,:,2);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,2) = temp;
             temp = colorImage1(:,:,3);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,3) = temp;
-%             parfor n=1:3
-%                temp = colorImage1(:,:,n);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,n) = temp;
-%             end
+             %parfor n=1:3
+             %   temp = colorImage1(:,:,n);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,n) = temp;
+             %end
             % Feed the binary image into a point cloud function
             % to let the function
             % figure out the x, y, and z positions.
