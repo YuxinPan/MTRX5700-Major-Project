@@ -79,8 +79,11 @@ while isempty(goalXY)
     while 1
         ii = ii + 1;
 
+        %disp('here');
+
         %     travelDist(serialObject, 0.3, 0.2);
-        turnAngle(serialObject, 0.1, 7);
+        turnAngle(serialObject, 0.1, 10);
+        %disp('here2');
 
         % Get encoder data
         angleChange = AngleSensorRoomba(serialObject);
@@ -140,66 +143,8 @@ while isempty(goalXY)
         %     vel = vel * -1;
 
 
-
-
-
-        %% Try find the can
-        I_hsv = rgb2hsv(colorImage);
-
-        % Red sits around zero, but wraps to one.
-        % I_hsv should be float values in the range [0.0, 1.0]
-        lowBound = 0.98;
-        highBound = 0.02;
-
-        I_hue = I_hsv(:,:,1);
-        I_sat = I_hsv(:,:,2);
-        I_val = I_hsv(:,:,3);
-
-        I_red = (I_hue > lowBound) | (I_hue < highBound);
-        I_red = I_red & (I_sat>0.5) & (I_val > 0.6);
-        se = strel('disk',40);
-        cansBinaryImage = imclose(I_red,se);
-
-        stats = [regionprops(cansBinaryImage,'Centroid', 'area', 'BoundingBox', 'PixelIdxList')];
-
-        % Increment for creating an array of can positions
-        canCount = 0;
-        objectPos = [];
-        for stat = 1:length(stats)
-            if stats(stat).Area > 100
-                % Increment counter
-                canCount = canCount + 1;
-
-                % Get a fresh clear image
-                colorImage1=uint8(ones(1080,1920,3).*255);
-
-                % Plot red outlines of cans
-                %             rectangle('Position', stats(stat).BoundingBox,'Linewidth', 3, 'EdgeColor', 'r', 'LineStyle', '--');
-
-                % Change colorImage1 pixels that are part of the can from white to
-                % black(255 to 0)
-                temp = colorImage1(:,:,1);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,1) = temp;
-                temp = colorImage1(:,:,2);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,2) = temp;
-                temp = colorImage1(:,:,3);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,3) = temp;
-
-                % Feed the binary image into a point cloud function
-                % to let the function
-                % figure out the x, y, and z positions.
-                ptCloud = pcfromkinect(depthDevice,depthImage,colorImage1);
-
-
-                % Isolate the points that are part of the can(by finding colours
-                % that = 0), then take the average of their x, y, and z positions
-                k=find(ptCloud.Color(:,:,1)==0);
-                temp=ptCloud.Location(:,:,1);temp=temp(k);temp(isnan(temp)) = []; objectPos(1,canCount) = mean(temp);
-                temp=ptCloud.Location(:,:,2);temp=temp(k);temp(isnan(temp)) = []; objectPos(2,canCount) = mean(temp);
-                temp=ptCloud.Location(:,:,3);temp=temp(k);temp(isnan(temp)) = []; objectPos(3,canCount) = mean(temp);
-                % Display text next to the cans to show us their positions
-                %             text(round(stats(stat).Centroid(1))+30,round(stats(stat).Centroid(2))+20, sprintf('x: %.2fm, y: %.2fm, z: %.2fm',objectPos(1,canCount),objectPos(2,canCount),objectPos(3,canCount)));
-            end
-        end
-
-
+        % detect can function
+        [objectPos,canCount] = canDetection(colorImage,depthImage,depthDevice);
         if size(objectPos,2) > 0
             % Transformation matrix to transform from body to inertial
             bod2inerM = [cos(currentPose(3)), sin(currentPose(3));
@@ -223,9 +168,12 @@ while isempty(goalXY)
             p3 = plot(inerObjectPos(1,:),inerObjectPos(2,:),'bx'); % this is the can detected
         end
 
-        hold on;
+        exist p7;
+        if ans
+            delete(p7);
+        end
         if ~isempty(goalXY)
-            p4 = plot(goalXY(1),goalXY(2),'kx');
+            p7 = plot(goalXY(1),goalXY(2),'kx');
         end
 
         %% Clean up
@@ -241,7 +189,7 @@ while isempty(goalXY)
         %     if t(ii+1) > timeDuration
         %         break;
         %     end
-        if ii == 40 
+        if ii == 36
             break;
         end
     end
@@ -260,14 +208,14 @@ release(colorDevice);
 release(depthDevice);
 fprintf('Script ended with %.0f scans after %.2f seconds, average time per scan: %.2f seconds\n',ii, t(ii), t(ii)/ii);
 figure();
-subplot(1,2,1);
 plot(timeTaken);
 title('Time taken for each loop');
 
-subplot(1,2,2);
 [scans, optimizedPoses]  = scansAndPoses(slamAlg);
 map = buildMap(scans, optimizedPoses, mapResolution, maxLidarRange);
-figure;
+
+figure();
+subplot(1,2,1);
 show(map);
 hold on
 show(slamAlg.PoseGraph, 'IDs', 'off');
@@ -275,11 +223,11 @@ hold off
 title('Occupancy Grid Map Built Using Lidar SLAM');
 %% path planning
 
-if ~isempty(inerObjectPos) % if there is a can, then go for it
-    figure();
-    myOccupancyShow=pathPlan(map,goalXY);
-    imagesc(myOccupancyShow);
-end
+%if ~isempty(inerObjectPos) % if there is a can, then go for it
+subplot(1,2,2);
+myOccupancyShow=pathPlan(map,goalXY);
+imagesc(myOccupancyShow);
+%end
 
 figure();
 
@@ -313,63 +261,8 @@ while 1
     currentPose(3) = currentPose(3) + angleChange;
     
     %% Try find the can
-    
-    colorImage = step(colorDevice);
-    depthImage = step(depthDevice);
-    I_hsv = rgb2hsv(colorImage);
-    
-    % Red sits around zero, but wraps to one.
-    % I_hsv should be float values in the range [0.0, 1.0]
-    lowBound = 0.98;
-    highBound = 0.02;
-    
-    I_hue = I_hsv(:,:,1);
-    I_sat = I_hsv(:,:,2);
-    I_val = I_hsv(:,:,3);
-    
-    I_red = (I_hue > lowBound) | (I_hue < highBound);
-    I_red = I_red & (I_sat>0.5) & (I_val > 0.6);
-    se = strel('disk',40);
-    cansBinaryImage = imclose(I_red,se);
-    
-    stats = [regionprops(cansBinaryImage,'Centroid', 'area', 'BoundingBox', 'PixelIdxList')];
-    
-    % Increment for creating an array of can positions
-    canCount = 0;
-    objectPos = [];
-    for stat = 1:length(stats)
-        if stats(stat).Area > 100
-            % Increment counter
-            canCount = canCount + 1;
-            
-            % Get a fresh clear image
-            colorImage1=uint8(ones(1080,1920,3).*255);
-            
-            % Plot red outlines of cans
-            %             rectangle('Position', stats(stat).BoundingBox,'Linewidth', 3, 'EdgeColor', 'r', 'LineStyle', '--');
-            
-            % Change colorImage1 pixels that are part of the can from white to
-            % black(255 to 0)
-            temp = colorImage1(:,:,1);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,1) = temp;
-            temp = colorImage1(:,:,2);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,2) = temp;
-            temp = colorImage1(:,:,3);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,3) = temp;
-            
-            % Feed the binary image into a point cloud function
-            % to let the function
-            % figure out the x, y, and z positions.
-            ptCloud = pcfromkinect(depthDevice,depthImage,colorImage1);
-            
-            
-            % Isolate the points that are part of the can(by finding colours
-            % that = 0), then take the average of their x, y, and z positions
-            k=find(ptCloud.Color(:,:,1)==0);
-            temp=ptCloud.Location(:,:,1);temp=temp(k);temp(isnan(temp)) = []; objectPos(1,canCount) = mean(temp);
-            temp=ptCloud.Location(:,:,2);temp=temp(k);temp(isnan(temp)) = []; objectPos(2,canCount) = mean(temp);
-            temp=ptCloud.Location(:,:,3);temp=temp(k);temp(isnan(temp)) = []; objectPos(3,canCount) = mean(temp);
-            % Display text next to the cans to show us their positions
-            %             text(round(stats(stat).Centroid(1))+30,round(stats(stat).Centroid(2))+20, sprintf('x: %.2fm, y: %.2fm, z: %.2fm',objectPos(1,canCount),objectPos(2,canCount),objectPos(3,canCount)));
-        end
-    end
+    [objectPos,canCount] = canDetection(colorImage,depthImage,depthDevice);
+
     
     
     if size(objectPos,2) > 0
@@ -417,6 +310,10 @@ while 1
     %turnAngle(serialObject, 0.1, 7);
     
     hold on;
+    exist p4;
+    if ans
+        delete(p4);
+    end
     if ~isempty(goalXY)
         p4 = plot(goalXY(1),goalXY(2),'kx');
     end
@@ -482,4 +379,68 @@ fprintf('Point count points: %d\n',size(xyz,1));
 scanData = lidarScan(double([xyz(:,1),xyz(:,3)]));
 %     pause(0.5);
 
+end
+
+
+function [objectPos,canCount] = canDetection(colorImage,depthImage,depthDevice)
+    %% Try find the can
+    I_hsv = rgb2hsv(colorImage);
+
+    % Red sits around zero, but wraps to one.
+    % I_hsv should be float values in the range [0.0, 1.0]
+    lowBound = 0.98;
+    highBound = 0.02;
+
+    I_hue = I_hsv(:,:,1);
+    I_sat = I_hsv(:,:,2);
+    I_val = I_hsv(:,:,3);
+
+    I_red = (I_hue > lowBound) | (I_hue < highBound);
+    I_red = I_red & (I_sat>0.5) & (I_val > 0.6);
+    se = strel('disk',40);
+    cansBinaryImage = imclose(I_red,se);
+
+    stats = [regionprops(cansBinaryImage,'Centroid', 'area', 'BoundingBox', 'PixelIdxList')];
+
+    % Increment for creating an array of can positions
+    canCount = 0;
+    objectPos = [];
+    for stat = 1:length(stats)
+        if stats(stat).Area > 100
+            % Increment counter
+            canCount = canCount + 1;
+
+            % Get a fresh clear image
+            colorImage1=uint8(ones(1080,1920,3).*255);
+
+            % Plot red outlines of cans
+            %             rectangle('Position', stats(stat).BoundingBox,'Linewidth', 3, 'EdgeColor', 'r', 'LineStyle', '--');
+
+            % Change colorImage1 pixels that are part of the can from white to
+            % black(255 to 0)
+            temp = colorImage1(:,:,1);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,1) = temp;
+            temp = colorImage1(:,:,2);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,2) = temp;
+            temp = colorImage1(:,:,3);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,3) = temp;
+%             parfor n=1:3
+%                temp = colorImage1(:,:,n);temp(stats(stat).PixelIdxList) = 0;colorImage1(:,:,n) = temp;
+%             end
+            % Feed the binary image into a point cloud function
+            % to let the function
+            % figure out the x, y, and z positions.
+            ptCloud = pcfromkinect(depthDevice,depthImage,colorImage1);
+
+
+            % Isolate the points that are part of the can(by finding colours
+            % that = 0), then take the average of their x, y, and z positions
+            k=find(ptCloud.Color(:,:,1)==0);
+            %parfor n=1:3
+            temp=ptCloud.Location(:,:,1);temp=temp(k);temp(isnan(temp)) = []; objectPos(1,canCount) = mean(temp);
+            temp=ptCloud.Location(:,:,2);temp=temp(k);temp(isnan(temp)) = []; objectPos(2,canCount) = mean(temp);
+            temp=ptCloud.Location(:,:,3);temp=temp(k);temp(isnan(temp)) = []; objectPos(3,canCount) = mean(temp);
+            %    temp=ptCloud.Location(:,:,n);temp=temp(k);temp(isnan(temp)) = []; objectPos(n,canCount) = mean(temp);
+            %end
+            % Display text next to the cans to show us their positions
+            %             text(round(stats(stat).Centroid(1))+30,round(stats(stat).Centroid(2))+20, sprintf('x: %.2fm, y: %.2fm, z: %.2fm',objectPos(1,canCount),objectPos(2,canCount),objectPos(3,canCount)));
+        end
+    end
 end
