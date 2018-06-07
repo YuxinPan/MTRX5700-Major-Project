@@ -145,8 +145,10 @@ while isempty(goalXY)
 
         % detect can function
         [objectPos,canCount] = canDetection(colorImage,depthImage,depthDevice);
-        if size(objectPos,2) > 0
+        
+        if size(objectPos,2) > 0 && objectPos(2,1)<0.15 && objectPos(2,1)>-0.3
             % Transformation matrix to transform from body to inertial
+            fprintf('can height: %.3f \n',objectPos(2,1));
             bod2inerM = [cos(currentPose(3)), sin(currentPose(3));
                 -sin(currentPose(3)), cos(currentPose(3))]';
 
@@ -189,7 +191,7 @@ while isempty(goalXY)
         %     if t(ii+1) > timeDuration
         %         break;
         %     end
-        if ii == 36
+        if ii == 32
             break;
         end
     end
@@ -241,6 +243,7 @@ turnAngle(serialObject, 0.1, rad2deg(goalAngle-currentPose(3)));
 angle = 0;
 dist=0;
 currentPose=[0;0;0];
+ii=0;
 while 1
     ii = ii + 1;
 
@@ -263,9 +266,9 @@ while 1
     %% Try find the can
     [objectPos,canCount] = canDetection(colorImage,depthImage,depthDevice);
 
+    objectPos
     
-    
-    if size(objectPos,2) > 0
+    if size(objectPos,2) > 0 && objectPos(2,1)<0.15 && objectPos(2,1)>-0.3
         % Transformation matrix to transform from body to inertial
         bod2inerM = [cos(currentPose(3)), sin(currentPose(3));
             -sin(currentPose(3)), cos(currentPose(3))]';
@@ -306,17 +309,15 @@ while 1
             end
         end
     end
-        travelDist(serialObject, 0.3, 0.2);
-    %turnAngle(serialObject, 0.1, 7);
-    
+
     hold on;
-    exist p4;
-    if ans
-        delete(p4);
-    end
-    if ~isempty(goalXY)
-        p4 = plot(goalXY(1),goalXY(2),'kx');
-    end
+%     exist p4;
+%     if ans
+%         delete(p4);
+%     end
+%     if ~isempty(goalXY)
+%         p4 = plot(goalXY(1),goalXY(2),'kx');
+%     end
     p4 = plot(currentPose(1),currentPose(2),'bx');
     %% Clean up
     
