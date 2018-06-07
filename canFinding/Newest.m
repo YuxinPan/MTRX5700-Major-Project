@@ -59,7 +59,9 @@ hBlob.MaximumBlobArea = 100000;
 stats = [regionprops(cansBinaryImage,'Centroid', 'area', 'BoundingBox', 'PixelIdxList')];
 figure(1);
 hold on;
-% imshow(not(cansBinaryImage));
+imshow(not(cansBinaryImage));
+figure(2);
+hold on;
 imshow(colorImage);
 
 % Increment for creating an array of can positions
@@ -73,6 +75,9 @@ for ii = 1:length(stats)
         colorImage1=uint8(ones(1080,1920,3).*255);
         
         % Plot red outlines of cans
+        figure(1);
+        rectangle('Position', stats(ii).BoundingBox,'Linewidth', 3, 'EdgeColor', 'r', 'LineStyle', '--');
+        figure(2);
         rectangle('Position', stats(ii).BoundingBox,'Linewidth', 3, 'EdgeColor', 'r', 'LineStyle', '--');
         
         % Change colorImage1 pixels that are part of the can from white to
@@ -95,8 +100,12 @@ for ii = 1:length(stats)
         temp=ptCloud.Location(:,:,3);temp=temp(k);temp(isnan(temp)) = []; objectPos(3,iii) = mean(temp);
         
         % Display text next to the cans to show us their positions
+        figure(1);
+        text(round(stats(ii).Centroid(1))+30,round(stats(ii).Centroid(2))+20, sprintf('x: %.2fm, y: %.2fm, z: %.2fm',objectPos(1,iii),objectPos(2,iii),objectPos(3,iii)));
+        figure(2);
         text(round(stats(ii).Centroid(1))+30,round(stats(ii).Centroid(2))+20, sprintf('x: %.2fm, y: %.2fm, z: %.2fm',objectPos(1,iii),objectPos(2,iii),objectPos(3,iii)));
     end
 end
-
+figure(3);
+imshow(depthImage.*10);
 
