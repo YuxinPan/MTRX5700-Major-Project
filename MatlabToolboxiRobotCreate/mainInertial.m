@@ -40,7 +40,7 @@ depthDevice = imaq.VideoDevice('kinect',2)
 
 
 
-[serialObject] = RoombaInit(18)  % this is the serial port
+[serialObject] = RoombaInit(3)  % this is the serial port
 % To hold our LIDAR scans
 scans = {};
 
